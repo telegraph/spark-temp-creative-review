@@ -3,12 +3,7 @@
    * Create each link in the given year
    */
   const createSite = (rootEl, site, isYearOpen) => {
-    const html = `
-      <div>
-        <span class="brand">${site.Brand}</span> · <span class="name">${site.Title}</span>
-      </div>
-      <span class="type">${site.Type}</span>
-    `;
+    const html = `<div><span class="brand">${site.Brand}</span> · <span class="name">${site.Title}</span></div><span class="type">${site.Type}</span>`;
 
     const a = document.createElement('a');
     a.target = '_blank';
@@ -47,15 +42,7 @@
   }
 
   const createYear = (rootEl, year, isYearOpen) => {
-    const html = ` <header>
-        <span class="title">${year}</span>
-
-        <img class="cross" src="./src/assets/cross-icon.svg" alt="+" />
-      </header>
-
-      <main></main>
-    `;
-
+    const html = `<header><span class="title">${year}</span><img class="cross" src="./src/assets/cross-icon.svg" alt="+" /></header><main></main>`;
     const div = document.createElement('div');
     div.classList.add('year');
 
@@ -65,7 +52,7 @@
 
     div.innerHTML = html;
 
-    div.addEventListener('click', (e) => openYear(div, e));
+    div.querySelector('header').addEventListener('click', (e) => openYear(div, e));
 
     return div;
   };
