@@ -1,0 +1,47 @@
+{
+  "connection": "default",
+  "collectionName": "links",
+  "info": {
+    "name": "link",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "comment": ""
+  },
+  "attributes": {
+    "Brand": {
+      "type": "string"
+    },
+    "Title": {
+      "type": "string"
+    },
+    "Link": {
+      "type": "string"
+    },
+    "Type": {
+      "enum": [
+        "AMP Story",
+        "Brand identity",
+        "DPS",
+        "Hotspot article",
+        "Infographic",
+        "Interactive map",
+        "Interactive quiz",
+        "Long-form article",
+        "Magazine",
+        "Mock",
+        "Print",
+        "Social video",
+        "Supplement",
+        "Video"
+      ],
+      "type": "enumeration"
+    },
+    "year": {
+      "model": "year",
+      "via": "links"
+    }
+  }
+}

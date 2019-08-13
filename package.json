@@ -1,0 +1,26 @@
+{
+  "name": "sparkreview",
+  "version": "1.0.0",
+  "description": "1. start strapi 2. `browser-sync index.html`",
+  "main": "src/js/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-database": "./strapi.sh",
+    "start-server": "node server.js",
+    "start": "npm-run-all --parallel start-server start-database"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/telegraph/spark-sparkreview.git"
+  },
+  "author": "Gergely Toth",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/telegraph/spark-sparkreview/issues"
+  },
+  "homepage": "https://github.com/telegraph/spark-sparkreview#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "path": "^0.12.7"
+  }
+}

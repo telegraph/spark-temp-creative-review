@@ -1,0 +1,31 @@
+#General configuration for the environment
+
+environment:
+  name: prod
+  prefix: sparkreview
+  labels:
+    creator: "gergelyt"
+    name: "spark-sparkreview"
+    project: "sparkreview"
+    team: "spark"
+    environment: "prod"
+
+#Domain configs
+domain: platforms-prod-gcp.telegraph.co.uk #The domain to tag onto the DNS names
+
+#Resource requests for spark-sparkreview
+sparkresources:
+  cpureq: 250m
+  cpulim: 650m
+  memreq: 457444435
+  memlim: 1188543199
+
+#Images to use
+image:
+  blacklistui: eu.gcr.io/tmg-platforms-prod/spark-sparkreview
+  pullPolicy: Always
+  tag: latest
+
+#Descriptions to add to the deployment and pods
+description:
+  devtestdockerstrapi: "Spark Dev Test Sparkreview"

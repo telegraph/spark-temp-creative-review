@@ -1,0 +1,22 @@
+{
+  "connection": "default",
+  "collectionName": "years",
+  "info": {
+    "name": "year",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "comment": ""
+  },
+  "attributes": {
+    "Name": {
+      "type": "string"
+    },
+    "links": {
+      "collection": "link",
+      "via": "year"
+    }
+  }
+}

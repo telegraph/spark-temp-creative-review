@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: {{ .Values.environment.prefix }}-sparkreview-{{ .Values.environment.name }}
+    creator: {{ .Values.environment.labels.creator }}
+    name: {{ .Values.environment.labels.name }}
+    project: {{ .Values.environment.labels.project }}
+    team: {{ .Values.environment.labels.team }}
+    environment: {{ .Values.environment.labels.environment }}
+  annotations:
+    description: {{ .Values.description.sparkreview }}
+  name: {{ .Values.environment.prefix }}-sparkreview-{{ .Values.environment.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        description: {{ .Values.description.sparkreview }}
+      labels:
+        k8s-app: {{ .Values.environment.prefix }}-sparkreview-{{ .Values.environment.name }}
+        creator: {{ .Values.environment.labels.creator }}
+        name: {{ .Values.environment.labels.name }}
+        project: {{ .Values.environment.labels.project }}
+        team: {{ .Values.environment.labels.team }}
+        environment: {{ .Values.environment.labels.environment }}
+    spec:
+      hostname: {{ .Values.environment.prefix }}-sparkreview-{{ .Values.environment.name }}
+      containers:
+      - image: "{{ .Values.image.sparkreview }}:{{ .Values.image.tag }}"
+        name: {{ .Values.environment.prefix }}-sparkreview-{{ .Values.environment.name }}
+        resources:
+          limits:
+            memory: {{ .Values.sparkresources.memlim }}
+            cpu: {{ .Values.sparkresources.cpulim }}
+          requests:
+            memory: {{ .Values.sparkresources.memreq }}
+            cpu: {{ .Values.sparkresources.cpureq }}
+
+        ports:
+        - containerPort: 4000
