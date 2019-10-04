@@ -113,6 +113,14 @@
       return data;
     });
 
+  const introPromise = fetch('http://localhost:1337/intros')
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.length && data[0].hasOwnProperty('text')) {
+        document.getElementById('intro').innerHTML = data[0].text;
+      }
+    });
+
   // Search functionality
   // If we type anything into the input, all items must open up
   const input = document.getElementById('search-input');

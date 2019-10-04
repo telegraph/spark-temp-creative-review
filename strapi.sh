@@ -9,27 +9,17 @@ _stopStrapi() {
 
 trap _stopStrapi TERM INT
 
-cd /usr/src
+cd /usr/src/app
 
-APP_NAME=${APP_NAME:-database}
-DATABASE_CLIENT=${DATABASE_CLIENT:-sqlite}
-DATABASE_HOST=${DATABASE_HOST:-localhost}
-DATABASE_PORT=${DATABASE_PORT:-27017}
-DATABASE_NAME=${DATABASE_NAME:-strapi}
-DATABASE_SRV=${DATABASE_SRV:-false}
-EXTRA_ARGS=${EXTRA_ARGS:-}
+npm install --prefix ./database
 
-if [ ! -f "$APP_NAME/package.json" ]
-then
-    strapi new ${APP_NAME} --dbclient=$DATABASE_CLIENT --dbhost=$DATABASE_HOST --dbport=$DATABASE_PORT --dbsrv=$DATABASE_SRV --dbname=$DATABASE_NAME --dbusername=$DATABASE_USERNAME --dbpassword=$DATABASE_PASSWORD --dbssl=$DATABASE_SSL --dbauth=$DATABASE_AUTHENTICATION_DATABASE $EXTRA_ARGS
+cd database
 
-elif [ ! -d "$APP_NAME/node_modules" ]
-then
-    npm install --prefix ./$APP_NAME
-fi
+echo "Building strapi backend!"
+npm run build
 
-cd $APP_NAME
-strapi start &
+# strapi develop &
+#strapi start &
 
-strapiPID=$!
-wait "$strapiPID"
+#strapiPID=$!
+#wait "$strapiPID"

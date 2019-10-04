@@ -31,13 +31,13 @@
     "strapi-hook-bookshelf": "3.0.0-beta.15",
     "strapi-hook-knex": "3.0.0-beta.15",
     "knex": "latest",
-    "sqlite3": "latest"
+    "mysql": "latest"
   },
   "author": {
     "name": "A Strapi developer"
   },
   "strapi": {
-    "uuid": "97b732e6-5127-47a7-b9e7-be39dc909341"
+    "uuid": "242bc515-edb7-4339-a54c-628014bc2ab5"
   },
   "engines": {
     "node": ">=10.0.0",
