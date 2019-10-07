@@ -6,11 +6,11 @@ services:
     environment:
       - APP_NAME=sparkreview
       - DATABASE_CLIENT=mysql
-      - DATABASE_HOST=localhost
+      - DATABASE_HOST=db
       - DATABASE_PORT=3306
       - DATABASE_NAME=strapi
-      - DATABASE_USERNAME=root
-      - DATABASE_PASSWORD=root
+      - DATABASE_USERNAME=secret
+      - DATABASE_PASSWORD=secret
       - DATABASE_SSL=false
       - DATABASE_AUTHENTICATION_DATABASE=strapi
       - HOST=localhost
@@ -18,8 +18,7 @@ services:
       - 1337:1337
       - 3000:3000
     volumes:
-      - ./strapi-app:/usr/src/api/strapi-app
-      # - ./database:/usr/src/database
+      - ./database:/usr/src/app/database
       # - ./src:/usr/src/app
       # - /usr/src/api/strapi-app/node_modules
     depends_on:
@@ -27,12 +26,16 @@ services:
     restart: always
 
   db:
-    image: mysql
+    image: mysql:5.7
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     ports:
       - 3306:3306
       - 33060:33060
     environment:
+      MYSQL_USER: secret
+      MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: strapi
+    volumes:
+      - ./db:/var/lib/mysql
