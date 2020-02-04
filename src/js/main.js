@@ -57,28 +57,30 @@
     return div;
   };
 
-  const render = (data, isYearOpen) => {
+  const render = (allData, isYearOpen) => {
     const root = document.getElementById('year-wrapper');
 
-    // need to categorize the links first per year...
-    const dataGroupedByYear = data.reduce((obj, x) => {
-      const year = x.year;
+    // we already have them categorized by year, as per the spreadsheet
+    // // need to categorize the links first per year...
+    // const dataGroupedByYear = data.reduce((obj, x) => {
+    //   const year = x.year;
 
-      if (!obj.hasOwnProperty(year.Name)) {
-        obj[year.Name] = [];
-      }
+    //   if (!obj.hasOwnProperty(year.Name)) {
+    //     obj[year.Name] = [];
+    //   }
 
-      obj[year.Name].push(x);
-      return obj;
-    }, {});
+    //   obj[year.Name].push(x);
+    //   return obj;
+    // }, {});
 
     // empty the root
     root.innerHTML = '';
 
-    for (let [yearName, value] of Object.entries(dataGroupedByYear)) {
-      const year = createYear(root, yearName);
+    // create every year label, and the site links inside
+    for (let [dateName, data] of Object.entries(allData)) {
+      const year = createYear(root, data.dateName);
       const yearMain = year.querySelector('main');
-      value.forEach(site => createSite(yearMain, site, isYearOpen));
+      data.entries.forEach(site => createSite(yearMain, site, isYearOpen));
 
       root.appendChild(year);
     };
@@ -91,6 +93,55 @@
     return data;
   };
 
+  const fetchDataNext = () => {
+    // check if there's any more data to fetch, otherwise render!
+    if (fetchIndexNow < dataToFetch.length) {
+      // just because they had a random tab that we should actually ignore 
+      if (dataToFetch[fetchIndexNow].title != 'IGNORE') {
+        const dataPromise = fetch(dataToFetch[fetchIndexNow].url)
+
+        .then(response => response.json())
+
+        .then(dataNew => {
+          var entries = dataNew.feed.entry || [];
+
+          var currentTabData = entries.map((currentEntry) => {
+            return {
+              'Brand': currentEntry['gsx$brandpartner']['$t'] || "",
+              'Title': currentEntry['gsx$title']['$t'] || "",
+              'Type': currentEntry['gsx$type']['$t'] || "",
+              'Link': currentEntry['gsx$link']['$t'] || "",
+            };
+          });
+
+          allData.push( {
+              'dateName': dataToFetch[fetchIndexNow].title,
+              'entries': currentTabData,
+            }
+          );
+
+          // and iterate to the next data index to fetch
+          fetchIndexNow++;
+          fetchDataNext();
+        })
+      } else {
+        fetchIndexNow++;
+        fetchDataNext();
+      }
+    } else {
+      // now we got all the data, render it
+      render(allData, false);
+    }
+  }
+
+  const fetchData = () => {
+    fetchIndexNow = 0;
+    fetchDataNext();
+  }
+
+  let dataToFetch, fetchIndexNow = 0;
+  let allData = [];
+
   let fuse;
   const fuzzyOptions = {
     keys: ['Brand', 'Name', 'Title', 'Type'],
@@ -98,35 +149,52 @@
     shouldSort: false,
   };
 
-  const dataPromise = fetch('http://localhost:1337/links')
+  // get the individual URLs from here:
+  // https://spreadsheets.google.com/feeds/worksheets/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/public/full?alt=json
+  // then each URL as in the data above, ie:
+  // https://spreadsheets.google.com/feeds/list/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/o7ps080/public/full?alt=json
+
+  // const dataPromise = fetch('http://localhost:1337/links')
+  const dataPromise = fetch('https://spreadsheets.google.com/feeds/worksheets/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/public/full?alt=json')
     .then(response => response.json())
-
-    // render all data
-    .then(data => render(data))
-
-    // initialize fuzzy search
+    // go through all the entries (spreadsheet tabs), and create the entry data for each
     .then(data => {
-      // for the search we want to search for links, and then later on find
-      // what it returned and match the actual nested array's items with
-      fuse = new window.Fuse(data, fuzzyOptions);
+      var entries = data.feed.entry || [];
 
-      return data;
-    });
+      // just go through the json data and build a friendlier array to go through
+      dataToFetch = entries.map((currentEntry) => {
+        return {
+          'title': currentEntry['title']['$t'],
+          'url': currentEntry['link'][0]['href'] + '?alt=json',
+        };
+      });
+    })
+
+    .then(data => fetchData(data));
+
+    // // initialize fuzzy search
+    // .then(data => {
+    //   // for the search we want to search for links, and then later on find
+    //   // what it returned and match the actual nested array's items with
+    //   fuse = new window.Fuse(data, fuzzyOptions);
+
+    //   return data;
+    // });
 
   // Search functionality
   // If we type anything into the input, all items must open up
-  const input = document.getElementById('search-input');
-  input.addEventListener('input', (e) => {
-    const inputValue = e.srcElement.value;
+  // const input = document.getElementById('search-input');
+  // input.addEventListener('input', (e) => {
+  //   const inputValue = e.srcElement.value;
 
-    dataPromise.then(data => {
-      const result = fuse.search(inputValue);
+  //   dataPromise.then(data => {
+  //     const result = fuse.search(inputValue);
 
-      if (inputValue) {
-        render(result, true);
-      } else {
-        render(data, false);
-      }
-    });
-  });
+  //     if (inputValue) {
+  //       render(result, true);
+  //     } else {
+  //       render(data, false);
+  //     }
+  //   });
+  // });
 })();
