@@ -57,7 +57,7 @@
     return div;
   };
 
-  const render = (allData, isYearOpen) => {
+  const render = (allDataSorted, isYearOpen) => {
     const root = document.getElementById('year-wrapper');
 
     // we already have them categorized by year, as per the spreadsheet
@@ -77,12 +77,15 @@
     root.innerHTML = '';
 
     // create every year label, and the site links inside
-    for (let [dateName, data] of Object.entries(allData)) {
-      const year = createYear(root, data.dateName);
-      const yearMain = year.querySelector('main');
-      data.entries.forEach(site => createSite(yearMain, site, isYearOpen));
+    for (let [dateName, data] of Object.entries(allDataSorted)) {
+      // null elements were ignored elements, we could remove them from the array beforehand
+      if (data != null && data.entries.length > 0) {
+        const year = createYear(root, data.dateName);
+        const yearMain = year.querySelector('main');
+        data.entries.forEach(site => createSite(yearMain, site, isYearOpen));
 
-      root.appendChild(year);
+        root.appendChild(year);
+      }
     };
 
     if (isYearOpen) {
@@ -90,64 +93,52 @@
       years.forEach(yearEl => openYear(yearEl));
     }
 
-    return data;
+    // return data;
   };
 
-  const fetchDataNext = () => {
-    // check if there's any more data to fetch, otherwise render!
-    if (fetchIndexNow < dataToFetch.length) {
-      // just because they had a random tab that we should actually ignore 
-      if (dataToFetch[fetchIndexNow].title != 'IGNORE') {
-        const dataPromise = fetch(dataToFetch[fetchIndexNow].url)
+  const fetchData = (incomingFetchData) => {
+    // data could be null, if it is to be ignored
+    if (incomingFetchData) {
+      return fetch(incomingFetchData.url)
 
-        .then(response => response.json())
+      .then(response => response.json())
 
-        .then(dataNew => {
-          var entries = dataNew.feed.entry || [];
+      .then(dataNew => {
+        const entries = dataNew.feed.entry || [];
+        
+        const currentTabData = entries.map((currentEntry) => {
+          return {
+            'Brand': currentEntry['gsx$brandpartner']['$t'] || "",
+            'Title': currentEntry['gsx$title']['$t'] || "",
+            'Type': currentEntry['gsx$type']['$t'] || "",
+            'Link': currentEntry['gsx$link']['$t'] || "",
+          };
+        });
 
-          var currentTabData = entries.map((currentEntry) => {
-            return {
-              'Brand': currentEntry['gsx$brandpartner']['$t'] || "",
-              'Title': currentEntry['gsx$title']['$t'] || "",
-              'Type': currentEntry['gsx$type']['$t'] || "",
-              'Link': currentEntry['gsx$link']['$t'] || "",
-            };
-          });
-
-          allData.push( {
-              'dateName': dataToFetch[fetchIndexNow].title,
-              'entries': currentTabData,
-            }
-          );
-
-          // and iterate to the next data index to fetch
-          fetchIndexNow++;
-          fetchDataNext();
-        })
-      } else {
-        fetchIndexNow++;
-        fetchDataNext();
-      }
+        // add the data to the existing sorted array, so we don't have to re-sort later
+        const found = dataToFetch.findIndex(element => element.dateName === incomingFetchData.dateName);
+        dataToFetch[found].entries = currentTabData;
+      })
     } else {
-      // now we got all the data, render it
-      render(allData, false);
+      return;
     }
   }
 
-  const fetchData = () => {
-    fetchIndexNow = 0;
-    fetchDataNext();
+  const fetchAllData = () => {
+    // fetch them all at the same time
+    Promise.allSettled(dataToFetch.map(fetchData))
+    // render everything
+    .then( result => render(dataToFetch, false));
   }
 
-  let dataToFetch, fetchIndexNow = 0;
-  let allData = [];
+  let dataToFetch;
 
-  let fuse;
-  const fuzzyOptions = {
-    keys: ['Brand', 'Name', 'Title', 'Type'],
-    threshold: 0.4,
-    shouldSort: false,
-  };
+  // let fuse;
+  // const fuzzyOptions = {
+  //   keys: ['Brand', 'Name', 'Title', 'Type'],
+  //   threshold: 0.4,
+  //   shouldSort: false,
+  // };
 
   // get the individual URLs from here:
   // https://spreadsheets.google.com/feeds/worksheets/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/public/full?alt=json
@@ -157,20 +148,24 @@
   // const dataPromise = fetch('http://localhost:1337/links')
   const dataPromise = fetch('https://spreadsheets.google.com/feeds/worksheets/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/public/full?alt=json')
     .then(response => response.json())
-    // go through all the entries (spreadsheet tabs), and create the entry data for each
+
     .then(data => {
-      var entries = data.feed.entry || [];
+      const entries = data.feed.entry || [];
 
       // just go through the json data and build a friendlier array to go through
       dataToFetch = entries.map((currentEntry) => {
-        return {
-          'title': currentEntry['title']['$t'],
-          'url': currentEntry['link'][0]['href'] + '?alt=json',
-        };
+        if (currentEntry['title']['$t'] != "IGNORE") {
+          return {
+            'dateName': currentEntry['title']['$t'],
+            'url': currentEntry['link'][0]['href'] + '?alt=json',
+          };
+        } else {
+          return null;
+        }
       });
     })
 
-    .then(data => fetchData(data));
+    .then(data => fetchAllData(data));
 
     // // initialize fuzzy search
     // .then(data => {
