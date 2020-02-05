@@ -79,7 +79,7 @@
     // create every year label, and the site links inside
     for (let [dateName, data] of Object.entries(allDataSorted)) {
       // null elements were ignored elements, we could remove them from the array beforehand
-      if (data != null && data.entries.length > 0) {
+      if (data != null && data.entries && data.entries.length > 0) {
         const year = createYear(root, data.dateName);
         const yearMain = year.querySelector('main');
         data.entries.forEach(site => createSite(yearMain, site, isYearOpen));
@@ -98,7 +98,7 @@
 
   const fetchData = (incomingFetchData) => {
     // data could be null, if it is to be ignored
-    if (incomingFetchData) {
+    if (incomingFetchData && incomingFetchData.url ) {
       return fetch(incomingFetchData.url)
 
       .then(response => response.json())
@@ -128,17 +128,20 @@
     // fetch them all at the same time
     Promise.allSettled(dataToFetch.map(fetchData))
     // render everything
-    .then( result => render(dataToFetch, false));
+    .then(result => render(dataToFetch, false));
   }
 
-  let dataToFetch;
+  let dataToFetch, searchData;
 
-  // let fuse;
-  // const fuzzyOptions = {
-  //   keys: ['Brand', 'Name', 'Title', 'Type'],
-  //   threshold: 0.4,
-  //   shouldSort: false,
-  // };
+  let fuse;
+  const fuzzyOptions = {
+    keys: ['dateName', 'entries.Brand', 'entries.Title', 'entries.Type'],
+    // keys: ['Brand', 'Name', 'Title', 'Type'],
+    threshold: 0.1,
+    // a different threshold than a perfect is no good for year searching
+    // threshold: 0.4,
+    shouldSort: false,
+  };
 
   // get the individual URLs from here:
   // https://spreadsheets.google.com/feeds/worksheets/1_ipymJkVzb-9kg5XPtd3hp-l1Dch5DrUq-7eAY7kDwA/public/full?alt=json
@@ -160,36 +163,41 @@
             'url': currentEntry['link'][0]['href'] + '?alt=json',
           };
         } else {
-          return null;
+          return {};
         }
       });
     })
 
-    .then(data => fetchAllData(data));
+    .then(data => fetchAllData(data))
 
+    // create the search data, which is all the data minus the date labels
+    .then(data => {
+      // searchData
+      // TODO
+    })
+    
     // // initialize fuzzy search
-    // .then(data => {
-    //   // for the search we want to search for links, and then later on find
-    //   // what it returned and match the actual nested array's items with
-    //   fuse = new window.Fuse(data, fuzzyOptions);
-
-    //   return data;
-    // });
+    .then(data => {
+      // for the search we want to search for links, and then later on find
+      // what it returned and match the actual nested array's items with
+      fuse = new window.Fuse(dataToFetch, fuzzyOptions);
+      return;
+    });
 
   // Search functionality
   // If we type anything into the input, all items must open up
-  // const input = document.getElementById('search-input');
-  // input.addEventListener('input', (e) => {
-  //   const inputValue = e.srcElement.value;
+  const input = document.getElementById('search-input');
+  input.addEventListener('input', (e) => {
+    const inputValue = e.srcElement.value;
 
-  //   dataPromise.then(data => {
-  //     const result = fuse.search(inputValue);
+    dataPromise.then(data => {
+      const result = fuse.search(inputValue);
 
-  //     if (inputValue) {
-  //       render(result, true);
-  //     } else {
-  //       render(data, false);
-  //     }
-  //   });
-  // });
+      if (inputValue) {
+        render(result, true);
+      } else {
+        render(dataToFetch, false);
+      }
+    });
+  });
 })();
