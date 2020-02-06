@@ -76,17 +76,26 @@
     // empty the root
     root.innerHTML = '';
 
-    // create every year label, and the site links inside
-    for (let [dateName, data] of Object.entries(allDataSorted)) {
-      // null elements were ignored elements, we could remove them from the array beforehand
-      if (data != null && data.entries && data.entries.length > 0) {
-        const year = createYear(root, data.dateName);
-        const yearMain = year.querySelector('main');
-        data.entries.forEach(site => createSite(yearMain, site, isYearOpen));
+    // we know the year labels are always sorted as per the spreadsheet
+    let currentYear = null;
+    let currentYearContainer = null, currentYearMain = null;
 
-        root.appendChild(year);
+    allDataSorted.forEach(data => {
+      if (data != null) {
+        // check if the current year label exists
+        if (currentYear !== data.DateName) {
+          // create a new label, and add the site
+          currentYear = data.DateName;
+          currentYearContainer = createYear(root, currentYear);
+          // add the label/year container to the DOM
+          root.appendChild(currentYearContainer);
+          currentYearMain = currentYearContainer.querySelector('main');
+        }
+
+        // add this site to the current label
+        createSite(currentYearMain, data, isYearOpen);
       }
-    };
+    });
 
     if (isYearOpen) {
       const years = document.querySelectorAll('.year');
@@ -108,6 +117,7 @@
         
         const currentTabData = entries.map((currentEntry) => {
           return {
+            'DateName': incomingFetchData.dateName || "",
             'Brand': currentEntry['gsx$brandpartner']['$t'] || "",
             'Title': currentEntry['gsx$title']['$t'] || "",
             'Type': currentEntry['gsx$type']['$t'] || "",
@@ -118,29 +128,76 @@
         // add the data to the existing sorted array, so we don't have to re-sort later
         const found = dataToFetch.findIndex(element => element.dateName === incomingFetchData.dateName);
         dataToFetch[found].entries = currentTabData;
+        // the search data now will be created after we get everything, so we don't need to sort it
+        // searchData = searchData.concat(currentTabData);
       })
     } else {
       return;
     }
   }
 
+  const getUrlVars = () => {
+    var vars = {};
+    window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+  }
+
   const fetchAllData = () => {
     // fetch them all at the same time
     Promise.allSettled(dataToFetch.map(fetchData))
+    .then(data => {
+      initialSearch = getUrlVars()['search'] || "";
+
+      // create the search data - doing it here so it's already sorted
+      // also add the data to the search array, slightly different structure for happy results, but no sub-labelling
+      // and needs sorting!
+      dataToFetch.forEach(data => {
+        if (data.entries !== undefined) {
+          searchData = searchData.concat(data.entries);
+        }
+      });
+    })
     // render everything
-    .then(result => render(dataToFetch, false));
+    .then(result => render(searchData, false))
+    // initialize fuzzy search
+    .then(data => {
+      // for the search we want to search for links, and then later on find
+      // what it returned and match the actual nested array's items with
+      fuse = new window.Fuse(searchData, fuzzyOptions);
+      return;
+    })
+    .then(data => {
+      document.getElementById('search-input').value = initialSearch;
+      if(initialSearch && initialSearch != "") {
+        performSearch(initialSearch);
+      }
+    });
   }
 
-  let dataToFetch, searchData;
+  const performSearch = (searchValue) => {
+    dataPromise.then(data => {
+      const result = fuse.search(searchValue);
+
+      if (searchValue) {
+        render(result, true);
+      } else {
+        render(searchData, false);
+      }
+    });
+  }
+
+  let dataToFetch, searchData = [], initialSearch = '';
 
   let fuse;
   const fuzzyOptions = {
-    keys: ['dateName', 'entries.Brand', 'entries.Title', 'entries.Type'],
-    // keys: ['Brand', 'Name', 'Title', 'Type'],
+    keys: ['DateName', 'Brand', 'Title', 'Type'],
+    // a higher threshold than 0.1 is no good for year searching
     threshold: 0.1,
-    // a different threshold than a perfect is no good for year searching
     // threshold: 0.4,
     shouldSort: false,
+    tokenize: true,
   };
 
   // get the individual URLs from here:
@@ -168,36 +225,13 @@
       });
     })
 
-    .then(data => fetchAllData(data))
-
-    // create the search data, which is all the data minus the date labels
-    .then(data => {
-      // searchData
-      // TODO
-    })
-    
-    // // initialize fuzzy search
-    .then(data => {
-      // for the search we want to search for links, and then later on find
-      // what it returned and match the actual nested array's items with
-      fuse = new window.Fuse(dataToFetch, fuzzyOptions);
-      return;
-    });
+    .then(data => fetchAllData(data));
 
   // Search functionality
   // If we type anything into the input, all items must open up
   const input = document.getElementById('search-input');
   input.addEventListener('input', (e) => {
     const inputValue = e.srcElement.value;
-
-    dataPromise.then(data => {
-      const result = fuse.search(inputValue);
-
-      if (inputValue) {
-        render(result, true);
-      } else {
-        render(dataToFetch, false);
-      }
-    });
+    performSearch(inputValue);
   });
 })();
